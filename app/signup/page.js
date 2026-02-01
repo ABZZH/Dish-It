@@ -27,7 +27,14 @@ export default function SignupPage() {
         body: JSON.stringify(form),
       });
 
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        setError("Server error. Please try again.");
+        setLoading(false);
+        return;
+      }
 
       if (!res.ok) {
         setError(data.error || "Signup failed");
