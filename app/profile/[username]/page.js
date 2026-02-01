@@ -25,13 +25,7 @@ export default function ProfilePage({ params }) {
     notFound();
   }
 
-  let currentUser = null;
-  try {
-    currentUser = getSession();
-  } catch {
-    // not logged in
-  }
-
+  const currentUser = getSession();
   const isOwnProfile = currentUser && currentUser.userId === profileUser.id;
 
   let isFollowing = false;

@@ -30,13 +30,7 @@ export default function RecipeDetailPage({ params }) {
     notFound();
   }
 
-  let user = null;
-  try {
-    user = getSession();
-  } catch {
-    // not logged in
-  }
-
+  const user = getSession();
   const isOwner = user && user.userId === recipe.user_id;
 
   let liked = false;

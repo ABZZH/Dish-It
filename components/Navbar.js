@@ -2,12 +2,7 @@ import Link from "next/link";
 import { getSession } from "@/lib/auth";
 
 export default function Navbar() {
-  let user = null;
-  try {
-    user = getSession();
-  } catch {
-    // not logged in
-  }
+  const user = getSession();
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
