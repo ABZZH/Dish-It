@@ -9,7 +9,13 @@ import LogoutButton from "@/components/LogoutButton";
 export const dynamic = "force-dynamic";
 
 export default function ProfilePage({ params }) {
-  const db = getDb();
+  let db;
+  try {
+    db = getDb();
+  } catch (err) {
+    console.error("Failed to connect to database:", err);
+    notFound();
+  }
 
   const profileUser = db
     .prepare(
@@ -36,27 +42,36 @@ export default function ProfilePage({ params }) {
 
   let isFollowing = false;
   if (currentUser && !isOwnProfile) {
-    const follow = db
-      .prepare("SELECT id FROM follows WHERE follower_id = ? AND following_id = ?")
-      .get(currentUser.userId, profileUser.id);
-    isFollowing = !!follow;
+    try {
+      const follow = db
+        .prepare("SELECT id FROM follows WHERE follower_id = ? AND following_id = ?")
+        .get(currentUser.userId, profileUser.id);
+      isFollowing = !!follow;
+    } catch {
+      // ignore follow check failure
+    }
   }
 
-  const recipes = db
-    .prepare(
-      `SELECT r.*,
-              u.username, u.display_name, u.avatar_url,
-              COUNT(DISTINCT l.id) as like_count,
-              COUNT(DISTINCT c.id) as comment_count
-       FROM recipes r
-       JOIN users u ON r.user_id = u.id
-       LEFT JOIN likes l ON r.id = l.recipe_id
-       LEFT JOIN comments c ON r.id = c.recipe_id
-       WHERE r.user_id = ?
-       GROUP BY r.id
-       ORDER BY r.created_at DESC`
-    )
-    .all(profileUser.id);
+  let recipes = [];
+  try {
+    recipes = db
+      .prepare(
+        `SELECT r.*,
+                u.username, u.display_name, u.avatar_url,
+                COUNT(DISTINCT l.id) as like_count,
+                COUNT(DISTINCT c.id) as comment_count
+         FROM recipes r
+         JOIN users u ON r.user_id = u.id
+         LEFT JOIN likes l ON r.id = l.recipe_id
+         LEFT JOIN comments c ON r.id = c.recipe_id
+         WHERE r.user_id = ?
+         GROUP BY r.id
+         ORDER BY r.created_at DESC`
+      )
+      .all(profileUser.id);
+  } catch {
+    // ignore recipe load failure
+  }
 
   const joinDate = new Date(profileUser.created_at).toLocaleDateString("en-US", {
     month: "long",

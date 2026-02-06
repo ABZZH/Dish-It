@@ -25,34 +25,40 @@ export default function ExplorePage({ searchParams }) {
   const category = searchParams.category || "All";
   const sort = searchParams.sort || "recent";
 
-  const db = getDb();
+  let recipes = [];
 
-  let query = `
-    SELECT r.*,
-           u.username, u.display_name, u.avatar_url,
-           COUNT(DISTINCT l.id) as like_count,
-           COUNT(DISTINCT c.id) as comment_count
-    FROM recipes r
-    JOIN users u ON r.user_id = u.id
-    LEFT JOIN likes l ON r.id = l.recipe_id
-    LEFT JOIN comments c ON r.id = c.recipe_id
-  `;
+  try {
+    const db = getDb();
 
-  const params = [];
-  if (category !== "All") {
-    query += " WHERE r.category = ?";
-    params.push(category);
+    let query = `
+      SELECT r.*,
+             u.username, u.display_name, u.avatar_url,
+             COUNT(DISTINCT l.id) as like_count,
+             COUNT(DISTINCT c.id) as comment_count
+      FROM recipes r
+      JOIN users u ON r.user_id = u.id
+      LEFT JOIN likes l ON r.id = l.recipe_id
+      LEFT JOIN comments c ON r.id = c.recipe_id
+    `;
+
+    const params = [];
+    if (category !== "All") {
+      query += " WHERE r.category = ?";
+      params.push(category);
+    }
+
+    query += " GROUP BY r.id";
+
+    if (sort === "popular") {
+      query += " ORDER BY like_count DESC, r.created_at DESC";
+    } else {
+      query += " ORDER BY r.created_at DESC";
+    }
+
+    recipes = db.prepare(query).all(...params);
+  } catch (err) {
+    console.error("Failed to load recipes:", err);
   }
-
-  query += " GROUP BY r.id";
-
-  if (sort === "popular") {
-    query += " ORDER BY like_count DESC, r.created_at DESC";
-  } else {
-    query += " ORDER BY r.created_at DESC";
-  }
-
-  const recipes = db.prepare(query).all(...params);
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
