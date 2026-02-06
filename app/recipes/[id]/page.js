@@ -9,7 +9,13 @@ import DeleteRecipeButton from "@/components/DeleteRecipeButton";
 export const dynamic = "force-dynamic";
 
 export default function RecipeDetailPage({ params }) {
-  const db = getDb();
+  let db;
+  try {
+    db = getDb();
+  } catch (err) {
+    console.error("Failed to connect to database:", err);
+    notFound();
+  }
 
   const recipe = db
     .prepare(
@@ -41,20 +47,29 @@ export default function RecipeDetailPage({ params }) {
 
   let liked = false;
   if (user) {
-    const likeRow = db
-      .prepare("SELECT id FROM likes WHERE user_id = ? AND recipe_id = ?")
-      .get(user.userId, recipe.id);
-    liked = !!likeRow;
+    try {
+      const likeRow = db
+        .prepare("SELECT id FROM likes WHERE user_id = ? AND recipe_id = ?")
+        .get(user.userId, recipe.id);
+      liked = !!likeRow;
+    } catch {
+      // ignore like check failure
+    }
   }
 
-  const comments = db
-    .prepare(
-      `SELECT c.*, u.username, u.display_name, u.avatar_url
-       FROM comments c JOIN users u ON c.user_id = u.id
-       WHERE c.recipe_id = ?
-       ORDER BY c.created_at DESC`
-    )
-    .all(recipe.id);
+  let comments = [];
+  try {
+    comments = db
+      .prepare(
+        `SELECT c.*, u.username, u.display_name, u.avatar_url
+         FROM comments c JOIN users u ON c.user_id = u.id
+         WHERE c.recipe_id = ?
+         ORDER BY c.created_at DESC`
+      )
+      .all(recipe.id);
+  } catch {
+    // ignore comment load failure
+  }
 
   let ingredients = [];
   let instructions = [];

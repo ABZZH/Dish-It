@@ -5,39 +5,46 @@ import RecipeCard from "@/components/RecipeCard";
 export const dynamic = "force-dynamic";
 
 export default function HomePage() {
-  const db = getDb();
+  let recipes = [];
+  let popularRecipes = [];
 
-  const recipes = db
-    .prepare(
-      `SELECT r.*,
-              u.username, u.display_name, u.avatar_url,
-              COUNT(DISTINCT l.id) as like_count,
-              COUNT(DISTINCT c.id) as comment_count
-       FROM recipes r
-       JOIN users u ON r.user_id = u.id
-       LEFT JOIN likes l ON r.id = l.recipe_id
-       LEFT JOIN comments c ON r.id = c.recipe_id
-       GROUP BY r.id
-       ORDER BY r.created_at DESC
-       LIMIT 20`
-    )
-    .all();
+  try {
+    const db = getDb();
 
-  const popularRecipes = db
-    .prepare(
-      `SELECT r.*,
-              u.username, u.display_name, u.avatar_url,
-              COUNT(DISTINCT l.id) as like_count,
-              COUNT(DISTINCT c.id) as comment_count
-       FROM recipes r
-       JOIN users u ON r.user_id = u.id
-       LEFT JOIN likes l ON r.id = l.recipe_id
-       LEFT JOIN comments c ON r.id = c.recipe_id
-       GROUP BY r.id
-       ORDER BY like_count DESC
-       LIMIT 4`
-    )
-    .all();
+    recipes = db
+      .prepare(
+        `SELECT r.*,
+                u.username, u.display_name, u.avatar_url,
+                COUNT(DISTINCT l.id) as like_count,
+                COUNT(DISTINCT c.id) as comment_count
+         FROM recipes r
+         JOIN users u ON r.user_id = u.id
+         LEFT JOIN likes l ON r.id = l.recipe_id
+         LEFT JOIN comments c ON r.id = c.recipe_id
+         GROUP BY r.id
+         ORDER BY r.created_at DESC
+         LIMIT 20`
+      )
+      .all();
+
+    popularRecipes = db
+      .prepare(
+        `SELECT r.*,
+                u.username, u.display_name, u.avatar_url,
+                COUNT(DISTINCT l.id) as like_count,
+                COUNT(DISTINCT c.id) as comment_count
+         FROM recipes r
+         JOIN users u ON r.user_id = u.id
+         LEFT JOIN likes l ON r.id = l.recipe_id
+         LEFT JOIN comments c ON r.id = c.recipe_id
+         GROUP BY r.id
+         ORDER BY like_count DESC
+         LIMIT 4`
+      )
+      .all();
+  } catch (err) {
+    console.error("Failed to load recipes:", err);
+  }
 
   const categories = [
     { name: "Italian", emoji: "\u{1F35D}" },
